@@ -1,11 +1,59 @@
 #include <stdio.h>
-#include <stdbool.h>
+#include <stdlib.h>
+#include <time.h>
 
-#define SIZE 8
+#define BOARD_SIZE 8
 
-void printBoard(char board[SIZE][SIZE]) {
-    for (int i = 0; i < SIZE; i++) {
-        for (int j = 0; j < SIZE; j++) {
+void initializeBoard(char board[BOARD_SIZE][BOARD_SIZE]);
+void printBoard(char board[BOARD_SIZE][BOARD_SIZE]);
+int isValidMove(int fromX, int fromY, int toX, int toY, char board[BOARD_SIZE][BOARD_SIZE], char player);
+int makeMove(int fromX, int fromY, int toX, int toY, char board[BOARD_SIZE][BOARD_SIZE], char player);
+void playerMove(char board[BOARD_SIZE][BOARD_SIZE]);
+void computerMove(char board[BOARD_SIZE][BOARD_SIZE]);
+
+int main() {
+    char board[BOARD_SIZE][BOARD_SIZE];
+    int gameOver = 0;
+    
+    initializeBoard(board);
+    srand(time(NULL));
+
+    while (!gameOver) {
+        printBoard(board);
+        playerMove(board);
+        computerMove(board);
+    }
+
+    printf("Game over!\n");
+    return 0;
+}
+
+void initializeBoard(char board[BOARD_SIZE][BOARD_SIZE]) {
+    int i, j;
+
+    for (i = 0; i < BOARD_SIZE; i++) {
+        for (j = 0; j < BOARD_SIZE; j++) {
+            if ((i + j) % 2 == 0) {
+                board[i][j] = ' ';
+            } else {
+                if (i < 3) {
+                    board[i][j] = 'X';
+                } else if (i > 4) {
+                    board[i][j] = 'O';
+                } else {
+                    board[i][j] = ' ';
+                }
+            }
+        }
+    }
+}
+
+void printBoard(char board[BOARD_SIZE][BOARD_SIZE]) {
+    int i, j;
+    printf("\n  1 2 3 4 5 6 7 8\n");
+    for (i = 0; i < BOARD_SIZE; i++) {
+        printf("%d ", i + 1);
+        for (j = 0; j < BOARD_SIZE; j++) {
             printf("%c ", board[i][j]);
         }
         printf("\n");
@@ -13,68 +61,60 @@ void printBoard(char board[SIZE][SIZE]) {
     printf("\n");
 }
 
-bool isValidMove(char board[SIZE][SIZE], int x1, int y1, int x2, int y2, char player) {
-    if (x2 < 0 || x2 >= SIZE || y2 < 0 || y2 >= SIZE) return false;
-    if (board[x2][y2] != '.') return false;
-    if (player == 'x' && x2 == x1 + 1 && (y2 == y1 - 1 || y2 == y1 + 1)) return true;
-    if (player == 'o' && x2 == x1 - 1 && (y2 == y1 - 1 || y2 == y1 + 1)) return true;
-    if (player == 'x' && x2 == x1 + 2 && (y2 == y1 - 2 || y2 == y1 + 2) && board[(x1 + x2) / 2][(y1 + y2) / 2] == 'o') return true;
-    if (player == 'o' && x2 == x1 - 2 && (y2 == y1 - 2 || y2 == y1 + 2) && board[(x1 + x2) / 2][(y1 + y2) / 2] == 'x') return true;
-    return false;
+int isValidMove(int fromX, int fromY, int toX, int toY, char board[BOARD_SIZE][BOARD_SIZE], char player) {
+    if (toX < 0 || toX >= BOARD_SIZE || toY < 0 || toY >= BOARD_SIZE) {
+        return 0;
+    }
+    if (board[toX][toY] != ' ') {
+        return 0;
+    }
+    if (abs(fromX - toX) != 1 || abs(fromY - toY) != 1) {
+        return 0;
+    }
+    if (player == 'O' && board[fromX][fromY] != 'O') {
+        return 0;
+    }
+    if (player == 'X' && board[fromX][fromY] != 'X') {
+        return 0;
+    }
+    return 1;
 }
 
-void makeMove(char board[SIZE][SIZE], int x1, int y1, int x2, int y2, char player) {
-    board[x2][y2] = player;
-    board[x1][y1] = '.';
-    if (abs(x2 - x1) == 2) {
-        board[(x1 + x2) / 2][(y1 + y2) / 2] = '.';
-    }
-}
-
-bool hasMoves(char board[SIZE][SIZE], char player) {
-    for (int i = 0; i < SIZE; i++) {
-        for (int j = 0; j < SIZE; j++) {
-            if (board[i][j] == player) {
-                for (int dx = -2; dx <= 2; dx++) {
-                    for (int dy = -2; dy <= 2; dy++) {
-                        if (isValidMove(board, i, j, i + dx, j + dy, player)) return true;
-                    }
-                }
-            }
-        }
-    }
-    return false;
-}
-
-int main() {
-    char board[SIZE][SIZE] = {
-        {'.', 'x', '.', 'x', '.', 'x', '.', 'x'},
-        {'x', '.', 'x', '.', 'x', '.', 'x', '.'},
-        {'.', 'x', '.', 'x', '.', 'x', '.', 'x'},
-        {'.', '.', '.', '.', '.', '.', '.', '.'},
-        {'.', '.', '.', '.', '.', '.', '.', '.'},
-        {'o', '.', 'o', '.', 'o', '.', 'o', '.'},
-        {'.', 'o', '.', 'o', '.', 'o', '.', 'o'},
-        {'o', '.', 'o', '.', 'o', '.', 'o', '.'}
-    };
-    char currentPlayer = 'x';
-    while (hasMoves(board, 'x') && hasMoves(board, 'o')) {
-        printBoard(board);
-        int x1, y1, x2, y2;
-        printf("Player %c, enter your move (x1 y1 x2 y2): ", currentPlayer);
-        scanf("%d %d %d %d", &x1, &y1, &x2, &y2);
-        if (isValidMove(board, x1, y1, x2, y2, currentPlayer)) {
-            makeMove(board, x1, y1, x2, y2, currentPlayer);
-            currentPlayer = (currentPlayer == 'x') ? 'o' : 'x';
-        } else {
-            printf("Invalid move. Try again.\n");
-        }
-    }
-    printBoard(board);
-    if (!hasMoves(board, 'o')) {
-        printf("Player x wins!\n");
-    } else {
-        printf("Player o wins!\n");
+int makeMove(int fromX, int fromY, int toX, int toY, char board[BOARD_SIZE][BOARD_SIZE], char player) {
+    if (isValidMove(fromX, fromY, toX, toY, board, player)) {
+        board[toX][toY] = board[fromX][fromY];
+        board[fromX][fromY] = ' ';
+        return 1;
     }
     return 0;
+}
+
+void playerMove(char board[BOARD_SIZE][BOARD_SIZE]) {
+    int fromX, fromY, toX, toY;
+    int valid = 0;
+    
+    while (!valid) {
+        printf("Enter your move (fromX fromY toX toY): ");
+        scanf("%d %d %d %d", &fromX, &fromY, &toX, &toY);
+        fromX--; fromY--; toX--; toY--;
+        valid = makeMove(fromX, fromY, toX, toY, board, 'O');
+        if (!valid) {
+            printf("Invalid move, try again.\n");
+        }
+    }
+}
+
+void computerMove(char board[BOARD_SIZE][BOARD_SIZE]) {
+    int fromX, fromY, toX, toY;
+    int valid = 0;
+
+    while (!valid) {
+        fromX = rand() % BOARD_SIZE;
+        fromY = rand() % BOARD_SIZE;
+        toX = fromX + (rand() % 2 == 0 ? 1 : -1);
+        toY = fromY + (rand() % 2 == 0 ? 1 : -1);
+        valid = makeMove(fromX, fromY, toX, toY, board, 'X');
+    }
+
+    printf("Computer moves from (%d,%d) to (%d,%d)\n", fromX + 1, fromY + 1, toX + 1, toY + 1);
 }
